@@ -1,0 +1,6 @@
+{
+  "name": "ARCH-VISION",
+  "description": "AI Architectural Assistant - (주)한돌건축사사무소 최인명건축사",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
