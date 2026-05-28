@@ -134,15 +134,75 @@ export default function App() {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
-      if (type === "original") {
-        setOriginalImage(result);
-        setOriginalMimeType(file.type);
-        setOriginalName(file.name);
-      } else {
-        setReferenceImage(result);
-        setReferenceMimeType(file.type);
-        setReferenceName(file.name);
-      }
+
+      // Create an image object to check resolution and downscale if too large
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 1200; // Optimal max dimension for API performance and high vision quality
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            // High-quality rendering using image smoothing
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Output as JPEG with 0.88 quality which balances beauty and weight
+            const resizedDataUrl = canvas.toDataURL("image/jpeg", 0.88);
+            if (type === "original") {
+              setOriginalImage(resizedDataUrl);
+              setOriginalMimeType("image/jpeg");
+              setOriginalName(file.name);
+            } else {
+              setReferenceImage(resizedDataUrl);
+              setReferenceMimeType("image/jpeg");
+              setReferenceName(file.name);
+            }
+            console.log(`[Image Resizer] Scaled down from ${img.width}x${img.height} to ${width}x${height} and compressed successfully.`);
+            return;
+          }
+        }
+
+        // If not exceeding maxDim or canvas resizing fails, preserve original read result
+        if (type === "original") {
+          setOriginalImage(result);
+          setOriginalMimeType(file.type);
+          setOriginalName(file.name);
+        } else {
+          setReferenceImage(result);
+          setReferenceMimeType(file.type);
+          setReferenceName(file.name);
+        }
+      };
+      
+      img.onerror = () => {
+        // Fallback to raw base64 if image loading fails
+        if (type === "original") {
+          setOriginalImage(result);
+          setOriginalMimeType(file.type);
+          setOriginalName(file.name);
+        } else {
+          setReferenceImage(result);
+          setReferenceMimeType(file.type);
+          setReferenceName(file.name);
+        }
+      };
+
+      img.src = result;
     };
     reader.readAsDataURL(file);
   };
